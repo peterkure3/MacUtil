@@ -20,6 +20,11 @@ check_homebrew() {
     fi
 }
 
+# Function to show a popup notification
+# show_notification() {
+#     osascript -e 'display notification "All selected applications have been installed." with title "Installation Complete"'
+# }
+
 # Function to install a package
 install_package() {
     echo "Installing $1..."
@@ -29,40 +34,63 @@ install_package() {
 # Check for Homebrew installation
 check_homebrew
 
-echo "Select applications to install:"
+echo "Select applications to install (press ENTER after your selections):"
+
+# Function to check if an application is already installed
+is_installed() {
+    if type "$1" > /dev/null 2>&1; then
+        echo "$1 is already installed."
+        return 0 # Return 0 indicates the app is installed
+    else
+        return 1 # Return 1 indicates the app is not installed
+    fi
+}
+
+# Function to install a package
+install_package() {
+    if ! is_installed "$1"; then
+        echo "Installing $1..."
+        brew install $1 | tee /dev/tty
+    else
+        echo "Skipping installation of $1 as it is already installed."
+    fi
+}
+
+# Function to update Homebrew
+update_homebrew() {
+    echo "Updating Homebrew..."
+    brew update
+}
+
+# Function to upgrade all installed packages
+upgrade_packages() {
+    echo "Upgrading all installed packages..."
+    brew upgrade
+}
 
 # Define the options
-options=(
-    "git" "Install Git"
-    "node" "Install Node.js"
-    "python" "Install Python"
-    "firefox" "Install Firefox"
-    "vlc" "Install VLC Media Player"
-    # Add more applications here
-)
+options=("update" "upgrade" "git" "node" "python" "firefox" "vlc" "done")
 
 # Generate the menu
 PS3='Please enter your choice: '
 select opt in "${options[@]}"
 do
-    case $opt in
-        "Install Git")
-            install_package "git"
-            ;;
-        "Install Node.js")
-            install_package "node"
-            ;;
-        "Install Python")
-            install_package "python"
-            ;;
-        "Install Firefox")
-            install_package "firefox"
-            ;;
-        "Install VLC Media Player")
-            install_package "vlc"
-            ;;
-        # Add more cases here for additional applications
-        *)
-            echo "Invalid option $REPLY";;
-    esac
+    if [ "$opt" == "done" ]; then
+        break
+    elif [[ " ${options[@]} " =~ " ${opt} " ]]; then
+        install_package "$opt"
+    elif [ "$opt" == "update" ]; then
+        update_homebrew
+    elif [ "$opt" == "upgrade" ]; then
+        upgrade_packages
+    else
+        echo "Invalid option $REPLY"
+    fi
 done
+# Exiting
+echo "Exiting MacUtil..."
+sleep 3
+echo "Done."
+# # After the installation process
+# echo "All applications have been installed."
+# show_notification
