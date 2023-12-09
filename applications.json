@@ -1,0 +1,13 @@
+{
+    "applications": [
+      "git",
+      "node",
+      "python",
+      "firefox",
+      "vlc",
+      "visual-studio-code",
+      "postman",
+      "brave-browser"
+    ]
+  }
+  
