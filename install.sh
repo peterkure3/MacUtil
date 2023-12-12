@@ -1,26 +1,19 @@
 #!/bin/bash
 
-# echo "███╗░░░███╗░█████╗░░█████╗░██╗░░░██╗████████╗██╗██╗░░░░░  ██╗░░░██╗░░███╗░░░░░░█████╗░░░░░█████╗░"
-# echo "████╗░████║██╔══██╗██╔══██╗██║░░░██║╚══██╔══╝██║██║░░░░░  ██║░░░██║░████║░░░░░██╔══██╗░░░██╔══██╗"
-# echo "██╔████╔██║███████║██║░░╚═╝██║░░░██║░░░██║░░░██║██║░░░░░  ╚██╗░██╔╝██╔██║░░░░░██║░░██║░░░██║░░██║"
-# echo "██║╚██╔╝██║██╔══██║██║░░██╗██║░░░██║░░░██║░░░██║██║░░░░░  ░╚████╔╝░╚═╝██║░░░░░██║░░██║░░░██║░░██║"
-# echo "██║░╚═╝░██║██║░░██║╚█████╔╝╚██████╔╝░░░██║░░░██║███████╗  ░░╚██╔╝░░███████╗██╗╚█████╔╝██╗╚█████╔╝"
-# echo "╚═╝░░░░░╚═╝╚═╝░░╚═╝░╚════╝░░╚═════╝░░░░╚═╝░░░╚═╝╚══════╝  ░░░╚═╝░░░╚══════╝╚═╝░╚════╝░╚═╝░╚════╝░"
+echo "███╗░░░███╗░█████╗░░█████╗░██╗░░░██╗████████╗██╗██╗░░░░░  ██╗░░░██╗░░███╗░░░░░░█████╗░░░░░█████╗░"
+echo "████╗░████║██╔══██╗██╔══██╗██║░░░██║╚══██╔══╝██║██║░░░░░  ██║░░░██║░████║░░░░░██╔══██╗░░░██╔══██╗"
+echo "██╔████╔██║███████║██║░░╚═╝██║░░░██║░░░██║░░░██║██║░░░░░  ╚██╗░██╔╝██╔██║░░░░░██║░░██║░░░██║░░██║"
+echo "██║╚██╔╝██║██╔══██║██║░░██╗██║░░░██║░░░██║░░░██║██║░░░░░  ░╚████╔╝░╚═╝██║░░░░░██║░░██║░░░██║░░██║"
+echo "██║░╚═╝░██║██║░░██║╚█████╔╝╚██████╔╝░░░██║░░░██║███████╗  ░░╚██╔╝░░███████╗██╗╚█████╔╝██╗╚█████╔╝"
+echo "╚═╝░░░░░╚═╝╚═╝░░╚═╝░╚════╝░░╚═════╝░░░░╚═╝░░░╚═╝╚══════╝  ░░░╚═╝░░░╚══════╝╚═╝░╚════╝░╚═╝░╚════╝░"
 
 echo "Press ENTER to continue."
 read -p ""
 echo "If you don't have Homebrew installed, please press ENTER to install it."
 echo -p ""
 
-# Read applications from JSON file
-read_applications_from_json() {
-    if [ -f "applications.json" ]; then
-        mapfile -t applications < <(jq -r '.applications[]' applications.json)
-        options+=("${applications[@]}")
-    else
-        echo "Warning: applications.json not found."
-    fi
-}
+# Path to the applications JSON file
+JSON_FILE="applications.json"
 
 # Function to check if Homebrew is installed
 check_homebrew() {
@@ -29,42 +22,6 @@ check_homebrew() {
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     else
         echo "Homebrew is already installed."
-    fi
-}
-
-# Function to show a popup notification
-show_notification() {
-    osascript -e 'display notification "All selected applications have been installed." with title "Installation Complete"'
-}
-
-# Function to install a package
-install_package() {
-    local app_name="$1"
-    echo "Installing $app_name..."
-    brew install "$app_name" | tee /dev/tty
-}
-
-# Check for Homebrew installation
-check_homebrew
-
-# Read applications from JSON file
-read_applications_from_json
-
-# Display checkboxes for application selection
-show_checkbox_menu() {
-    local menu_options=()
-    for app in "${options[@]}"; do
-        menu_options+=("$app" "off")
-    done
-
-    selected_apps=$(whiptail --title "Select applications to install" --checklist \
-        "Use spacebar to select applications:" 20 60 10 "${menu_options[@]}" 3>&1 1>&2 2>&3)
-
-    if [ $? -eq 0 ]; then
-        selected_apps=($selected_apps)
-    else
-        echo "Selection canceled. Exiting."
-        exit 0
     fi
 }
 
@@ -79,11 +36,15 @@ is_installed() {
     fi
 }
 
-# Function to install selected applications
-install_selected_apps() {
-    for selected_app in "${selected_apps[@]}"; do
-        install_package "$selected_app"
-    done
+# Function to install a package
+install_package() {
+    local app_name="$1"
+    if ! is_installed "$app_name"; then
+        echo "Installing $app_name..."
+        brew install "$app_name" | tee /dev/tty
+    else
+        echo "Skipping installation of $app_name as it is already installed."
+    fi
 }
 
 # Function to update Homebrew
@@ -98,32 +59,87 @@ upgrade_packages() {
     brew upgrade | pv -l | tee /dev/tty
 }
 
+# Function to read applications from JSON file
+read_categories_from_json() {
+    if [ -f "$JSON_FILE" ]; then
+        # Read categories from the "categories" array in the JSON file
+        categories=($(jq -r 'keys_unsorted[]' "$JSON_FILE"))
+    else
+        zenity --error --title="Error" \
+            --text="Error: $JSON_FILE not found." \
+            --width=400 --height=200
+        exit 1
+    fi
+}
+
+# Function to read applications for a specific category from JSON file
+read_apps_by_category() {
+    local category="$1"
+    if [ -f "$JSON_FILE" ]; then
+        # Read apps for the specified category
+        apps=($(jq -r ".categories[\"$category\"][]" "$JSON_FILE"))
+    else
+        zenity --error --title="Error" \
+            --text="Error: $JSON_FILE not found." \
+            --width=400 --height=200
+        exit 1
+    fi
+}
+
+# Check for Homebrew installation
+check_homebrew
+
 # Generate the menu
 PS3='Please enter your choice: '
-options+=("custom" "done") # Add "custom" option
-select opt in "${options[@]}"
-do
-    if [ "$opt" == "done" ]; then
-        break
-    elif [ "$opt" == "custom" ]; then
-        custom_installation
-    elif [[ " ${options[@]} " =~ " ${opt} " ]]; then
-        install_package "$opt"
-    elif [ "$opt" == "update" ]; then
-        update_homebrew
-    elif [ "$opt" == "upgrade" ]; then
-        upgrade_packages
-    else
-        echo "Invalid option $REPLY"
-    fi
-done
 
-# List successfully installed applications after installation completes
-list_installed_apps
+
+select category in "Developer" "Media" "Miscellaneous" "Office" "System" "Update Homebrew" "Upgrade Packages" "Done"
+do
+    case $category in
+        "Update Homebrew")
+            update_homebrew
+            ;;
+        "Upgrade Packages")
+            upgrade_packages
+            ;;
+        "Done")
+            break
+            ;;
+        *)  
+            
+            # Read applications for the selected category
+            read_apps_by_category "$category"
+
+            # Display list with check boxes for app selection
+            selected_apps=$(zenity --list --title="MacUtil" \
+                --text="Choose the apps you want to install:" \
+                --checklist \
+                --column="Select" \
+                --column="App" \
+                $(for app in "${apps[@]}"; do
+                    echo FALSE "$app"
+                done) \
+                --width=400 --height=300 \
+                --separator="|" \
+                --ok-label="Install" --extra-button="Back")
+
+            if [ $? -eq 0 ]; then
+                # Install selected applications one by one
+                for selected_app in $(echo "$selected_apps" | tr "|" "\n"); do
+                    install_package "$selected_app"
+                done
+
+                # Display final dialog after all installations are done
+                zenity --info --title="Installation Done" \
+                    --text="All selected applications have been installed." \
+                    --width=400 --height=200 \
+                    --ok-label="Done"
+            fi
+            ;;
+    esac
+done
 
 # Exiting
 echo "Exiting MacUtil..."
-sleep 3
+sleep 1
 echo "Done."
-# After the installation process
-show_notification
