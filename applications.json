@@ -1,13 +1,35 @@
 {
-    "applications": [
-      "git",
-      "node",
-      "python",
-      "firefox",
-      "vlc",
-      "visual-studio-code",
-      "postman",
-      "brave-browser"
-    ]
+    "categories": {
+      "developer": [
+        "git",
+        "node",
+        "python",
+        "visual-studio-code",
+        "postman"
+      ],
+      "media": [
+        "firefox",
+        "vlc",
+        "brave-browser"
+      ],
+      "misc": [
+        "docker",
+        "tmux",
+        "htop",
+        "tree",
+        "wget",
+        "curl",
+        "jq",
+        "vim",
+        "zsh",
+        "gnupg"
+      ],
+      "office": [
+        "libreoffice"
+      ],
+      "system": [
+        "neofetch"
+      ]
+    }
   }
   
